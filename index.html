@@ -3,380 +3,624 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Arix High-Throughput Batch Crawler</title>
+  <title>Arix Deep-Diagnostic Parallel Crawler</title>
   <style>
     :root {
-      --bg: #090c10;
-      --card: #131822;
-      --border: #222c3d;
-      --text: #e6edf3;
-      --muted: #8b949e;
-      --accent: #58a6ff;
-      --success: #3fb950;
-      --danger: #f85149;
-      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+      --bg: #07090e;
+      --card: #0e131d;
+      --border: #1c2536;
+      --border-focus: #354663;
+      --text: #e1e7f0;
+      --muted: #748398;
+      --accent: #38bdf8;
+      --success: #34d399;
+      --danger: #f87171;
+      --warning: #fbbf24;
+      --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       background: var(--bg);
       color: var(--text);
-      font-family: var(--font);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding: 30px 20px 80px;
       line-height: 1.5;
-      padding: 32px 20px;
     }
-    .container {
-      max-width: 1200px;
+    .shell {
+      max-width: 1280px;
       margin: 0 auto;
     }
     header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
       margin-bottom: 24px;
+      gap: 16px;
+      flex-wrap: wrap;
     }
     h1 {
-      font-size: 26px;
+      font-size: 24px;
       font-weight: 700;
       letter-spacing: -0.02em;
     }
-    p.sub {
-      color: var(--muted);
-      font-size: 14px;
-      margin-top: 4px;
+    .endpoint-badge {
+      font-family: var(--mono);
+      font-size: 12px;
+      background: #141b27;
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--accent);
     }
     .panel {
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: 12px;
       padding: 20px;
-      margin-bottom: 24px;
+      margin-bottom: 20px;
     }
     label {
       display: block;
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--muted);
-      letter-spacing: 0.08em;
+      font-size: 11px;
+      font-weight: 700;
       text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
       margin-bottom: 8px;
     }
     textarea {
       width: 100%;
       height: 140px;
-      background: #0d1117;
+      background: #090c13;
       border: 1px solid var(--border);
       border-radius: 8px;
       color: #fff;
       padding: 12px;
       font-family: var(--mono);
-      font-size: 13px;
+      font-size: 12px;
       outline: none;
       resize: vertical;
     }
-    textarea:focus { border-color: var(--accent); }
-    .actions {
+    textarea:focus { border-color: var(--border-focus); }
+    .controls {
       display: flex;
+      flex-wrap: wrap;
       gap: 12px;
-      margin-top: 12px;
+      margin-top: 14px;
       align-items: center;
     }
     button {
-      padding: 10px 20px;
-      font-size: 14px;
+      padding: 9px 18px;
+      font-size: 13px;
       font-weight: 600;
       border-radius: 6px;
       border: none;
       cursor: pointer;
-      transition: opacity 0.2s;
+      transition: opacity 0.15s;
     }
     button:disabled { opacity: 0.4; cursor: not-allowed; }
-    .btn-run { background: var(--accent); color: #050a14; }
-    .btn-preset { background: var(--border); color: var(--text); }
-    .stats {
+    .btn-primary { background: var(--accent); color: #041019; }
+    .btn-secondary { background: #161e2e; color: var(--text); border: 1px solid var(--border); }
+    .concurrency-selector {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    select {
+      background: #090c13;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-family: var(--mono);
+      outline: none;
+    }
+    .metrics {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 12px;
-      margin-bottom: 24px;
+      margin-bottom: 20px;
     }
-    .stat-card {
+    .metric-card {
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: 8px;
-      padding: 16px;
+      padding: 14px;
     }
-    .stat-card small {
+    .metric-card small {
       display: block;
+      font-size: 10px;
+      font-weight: 700;
       color: var(--muted);
-      font-size: 11px;
-      font-weight: 600;
       text-transform: uppercase;
     }
-    .stat-card strong {
+    .metric-card strong {
       display: block;
-      font-size: 22px;
+      font-size: 20px;
       margin-top: 4px;
+      font-family: var(--mono);
     }
-    .stat-card.passed strong { color: var(--success); }
-    .stat-card.failed strong { color: var(--danger); }
+    .metric-card.ok strong { color: var(--success); }
+    .metric-card.err strong { color: var(--danger); }
     .results-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 20px;
     }
     @media (max-width: 900px) {
-      .stats { grid-template-columns: repeat(2, 1fr); }
       .results-grid { grid-template-columns: 1fr; }
+      .metrics { grid-template-columns: repeat(2, 1fr); }
     }
-    .column h2 {
-      font-size: 16px;
-      margin-bottom: 12px;
+    .col-header {
       display: flex;
+      justify-content: space-between;
       align-items: center;
-      gap: 8px;
+      margin-bottom: 12px;
     }
-    .column-badge {
+    .col-header h2 { font-size: 15px; font-weight: 600; }
+    .badge {
+      font-family: var(--mono);
       font-size: 11px;
       padding: 2px 8px;
       border-radius: 999px;
-      font-family: var(--mono);
     }
-    .passed-badge { background: #132d1e; color: var(--success); }
-    .failed-badge { background: #37191d; color: var(--danger); }
+    .badge-ok { background: #062b1b; color: var(--success); border: 1px solid #0f4e32; }
+    .badge-err { background: #320f13; color: var(--danger); border: 1px solid #5c1d24; }
     .card-list {
       display: flex;
       flex-direction: column;
       gap: 10px;
-      max-height: 600px;
+      max-height: 650px;
       overflow-y: auto;
       padding-right: 4px;
     }
-    .card-item {
-      background: #0d1117;
+    .item {
+      background: var(--card);
       border: 1px solid var(--border);
       border-radius: 8px;
       padding: 12px;
-      font-size: 13px;
-    }
-    .card-item .url {
-      font-family: var(--mono);
       font-size: 12px;
-      word-break: break-all;
-      color: #9ecbff;
-      text-decoration: none;
     }
-    .card-item .details {
+    .item.item-err { border-left: 3px solid var(--danger); }
+    .item.item-ok { border-left: 3px solid var(--success); }
+    .item-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .item-url {
+      font-family: var(--mono);
+      color: #93c5fd;
+      text-decoration: none;
+      word-break: break-all;
+    }
+    .item-time {
+      font-family: var(--mono);
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .item-summary {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
+      gap: 8px;
       margin-top: 8px;
-      font-size: 12px;
-      color: var(--muted);
+      font-size: 11px;
     }
-    .details b { color: var(--text); }
     .tag {
       padding: 2px 6px;
       border-radius: 4px;
-      font-size: 11px;
+      font-family: var(--mono);
       font-weight: 600;
     }
-    .tag-err { background: #3c1618; color: #ff7b72; }
-    .tag-ok { background: #122b1c; color: #7ee787; }
+    .tag-green { background: #062b1b; color: var(--success); }
+    .tag-red { background: #320f13; color: var(--danger); }
+    .tag-yellow { background: #2f2105; color: var(--warning); }
+    details {
+      margin-top: 10px;
+      border-top: 1px solid var(--border);
+      padding-top: 8px;
+    }
+    summary {
+      font-size: 11px;
+      color: var(--muted);
+      cursor: pointer;
+      user-select: none;
+    }
+    summary:hover { color: var(--text); }
+    pre {
+      background: #05070a;
+      padding: 10px;
+      border-radius: 6px;
+      margin-top: 6px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: #94a3b8;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      max-height: 180px;
+    }
+    .cors-alert {
+      background: #241407;
+      border: 1px solid #63320c;
+      color: #fed7aa;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 12px;
+      margin-bottom: 20px;
+      display: none;
+    }
   </style>
 </head>
 <body>
-  <div class="container">
+  <div class="shell">
     <header>
-      <h1>Arix Parallel Engine (Stress-Tester)</h1>
-      <p class="sub">Direct endpoint: <code>https://arix-web-crawler-chi.vercel.app/api/crawler</code></p>
+      <div>
+        <h1>Arix Parallel Engine (Stress-Tester)</h1>
+        <div style="color: var(--muted); font-size: 13px; margin-top: 4px;">Diagnostic Test Runner with Queue Isolation</div>
+      </div>
+      <div class="endpoint-badge" id="epDisplay">API: https://arix-web-crawler-chi.vercel.app/api/crawler</div>
     </header>
 
+    <div id="corsBanner" class="cors-alert">
+      <strong>CORS / Preflight Error Detected:</strong> Your browser refused connection to the crawler backend. You must deploy the CORS handler update in your Rust <code>api/crawler.rs</code> file.
+    </div>
+
     <section class="panel">
-      <label for="urls">Target URLs (1 Per Line, Max 50)</label>
-      <textarea id="urls" placeholder="https://example.com&#10;https://rust-lang.org&#10;https://news.ycombinator.com"></textarea>
-      <div class="actions">
-        <button id="btnRun" class="btn-run" onclick="runBatch()">Fire 50 in Parallel</button>
-        <button class="btn-preset" onclick="loadPresets()">Load 10 Presets</button>
-        <button class="btn-preset" onclick="clearAll()">Clear</button>
+      <label for="urls">Target URLs (Up to 50 URLs, 1 Per Line)</label>
+      <textarea id="urls" placeholder="https://example.com&#10;https://doc.rust-lang.org"></textarea>
+      
+      <div class="controls">
+        <button id="btnRun" class="btn-primary" onclick="startBatch()">Execute Parallel Batch</button>
+        <button class="btn-secondary" onclick="probeHealth()">CORS Probe (1 Req)</button>
+        <button class="btn-secondary" onclick="loadPresets()">Load 50 Targets</button>
+        <button class="btn-secondary" onclick="clearAll()">Clear</button>
+
+        <div class="concurrency-selector">
+          <span>Worker Pool:</span>
+          <select id="concurrency">
+            <option value="4">4 Parallel</option>
+            <option value="8" selected>8 Parallel (Optimal)</option>
+            <option value="16">16 Parallel (Max)</option>
+            <option value="50">50 Unbounded</option>
+          </select>
+        </div>
       </div>
     </section>
 
-    <div class="stats">
-      <div class="stat-card">
+    <div class="metrics">
+      <div class="metric-card">
         <small>Processed</small>
-        <strong id="statProcessed">0 / 0</strong>
+        <strong id="mProcessed">0 / 0</strong>
       </div>
-      <div class="stat-card passed">
+      <div class="metric-card ok">
         <small>Passed</small>
-        <strong id="statPassed">0</strong>
+        <strong id="mPassed">0</strong>
       </div>
-      <div class="stat-card failed">
+      <div class="metric-card err">
         <small>Failed</small>
-        <strong id="statFailed">0</strong>
+        <strong id="mFailed">0</strong>
       </div>
-      <div class="stat-card">
-        <small>Total Elapsed</small>
-        <strong id="statTime">0 ms</strong>
+      <div class="metric-card">
+        <small>Elapsed</small>
+        <strong id="mTime">0 ms</strong>
       </div>
     </div>
 
     <div class="results-grid">
-      <div class="column">
-        <h2>
-          <span>Passed Targets</span>
-          <span id="badgePassed" class="column-badge passed-badge">0</span>
-        </h2>
-        <div id="listPassed" class="card-list"></div>
+      <div>
+        <div class="col-header">
+          <h2>Passed Extractions</h2>
+          <span id="badgePassed" class="badge badge-ok">0</span>
+        </div>
+        <div id="passedList" class="card-list"></div>
       </div>
 
-      <div class="column">
-        <h2>
-          <span>Failed Targets</span>
-          <span id="badgeFailed" class="column-badge failed-badge">0</span>
-        </h2>
-        <div id="listFailed" class="card-list"></div>
+      <div>
+        <div class="col-header">
+          <h2>Failed Extractions & Rejections</h2>
+          <span id="badgeFailed" class="badge badge-err">0</span>
+        </div>
+        <div id="failedList" class="card-list"></div>
       </div>
     </div>
   </div>
 
   <script>
-    const API_ENDPOINT = 'https://arix-web-crawler-chi.vercel.app/api/crawler';
-
-    function loadPresets() {
-      const presets = [
-        'https://example.com',
-        'https://news.ycombinator.com',
-        'https://doc.rust-lang.org/book/',
-        'https://httpbin.org/html',
-        'https://www.wikipedia.org',
-        'https://www.reuters.com',
-        'https://www.theverge.com',
-        'https://httpbin.org/status/404',
-        'https://httpbin.org/status/401',
-        'https://httpbin.org/redirect/6'
-      ];
-      document.getElementById('urls').value = presets.join('\n');
-    }
+    const API_URL = 'https://arix-web-crawler-chi.vercel.app/api/crawler';
 
     function clearAll() {
       document.getElementById('urls').value = '';
-      document.getElementById('listPassed').innerHTML = '';
-      document.getElementById('listFailed').innerHTML = '';
-      document.getElementById('statProcessed').textContent = '0 / 0';
-      document.getElementById('statPassed').textContent = '0';
-      document.getElementById('statFailed').textContent = '0';
-      document.getElementById('statTime').textContent = '0 ms';
+      document.getElementById('passedList').innerHTML = '';
+      document.getElementById('failedList').innerHTML = '';
+      document.getElementById('mProcessed').textContent = '0 / 0';
+      document.getElementById('mPassed').textContent = '0';
+      document.getElementById('mFailed').textContent = '0';
+      document.getElementById('mTime').textContent = '0 ms';
       document.getElementById('badgePassed').textContent = '0';
       document.getElementById('badgeFailed').textContent = '0';
+      document.getElementById('corsBanner').style.display = 'none';
+    }
+
+    async function probeHealth() {
+      const btn = event.target;
+      btn.disabled = true;
+      btn.textContent = 'Probing...';
+      try {
+        const res = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ url: 'https://example.com' })
+        });
+        const data = await res.json();
+        if (res.ok && data.ok) {
+          alert('CORS & Health Check PASSED: Backend is reachable and returning responses.');
+          document.getElementById('corsBanner').style.display = 'none';
+        } else {
+          alert('Backend reached, but returned status ' + res.status + ': ' + JSON.stringify(data));
+        }
+      } catch (err) {
+        document.getElementById('corsBanner').style.display = 'block';
+        alert('CORS Probe FAILED: ' + err.message + '\n\nThe browser blocked the request. Check Step 1 below.');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'CORS Probe (1 Req)';
+      }
     }
 
     async function crawlTarget(rawUrl) {
-      let url = rawUrl.trim();
-      if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+      let target = rawUrl.trim();
+      if (!/^https?:\/\//i.test(target)) target = 'https://' + target;
 
-      const start = performance.now();
+      const t0 = performance.now();
       try {
-        const res = await fetch(API_ENDPOINT, {
+        const response = await fetch(API_URL, {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ url: url })
+          body: JSON.stringify({ url: target })
         });
-        const duration = Math.round(performance.now() - start);
-        const data = await res.json();
-        return { ok: data.ok && res.ok, url, duration, data };
-      } catch (err) {
+
+        const elapsed = Math.round(performance.now() - t0);
+        let data;
+        try {
+          data = await response.json();
+        } catch (jsonErr) {
+          return {
+            url: target,
+            ok: false,
+            elapsed,
+            httpStatus: response.status,
+            reason: 'INVALID_JSON_RESPONSE',
+            details: 'Server returned HTTP ' + response.status + ' but body was not valid JSON.'
+          };
+        }
+
+        if (!response.ok || !data.ok) {
+          return {
+            url: target,
+            ok: false,
+            elapsed,
+            httpStatus: response.status,
+            reason: (data.error && data.error.code) || 'HTTP_' + response.status,
+            details: (data.error && data.error.message) || 'Unknown crawler rejection.',
+            raw: data
+          };
+        }
+
         return {
+          url: target,
+          ok: true,
+          elapsed,
+          httpStatus: response.status,
+          title: data.title || 'Untitled',
+          wordCount: data.word_count || 0,
+          quality: data.quality || 0,
+          method: data.method || 'static',
+          stages: data.stages || {},
+          warnings: data.warnings || [],
+          textSnippet: (data.text || '').slice(0, 300),
+          raw: data
+        };
+      } catch (networkErr) {
+        return {
+          url: target,
           ok: false,
-          url,
-          duration: Math.round(performance.now() - start),
-          data: { error: { message: err.message || 'Network/CORS Error' } }
+          elapsed: Math.round(performance.now() - t0),
+          httpStatus: 0,
+          reason: 'CORS_OR_NETWORK_ERROR',
+          details: networkErr.message === 'Failed to fetch' 
+            ? 'Failed to fetch: Request was blocked by the browser (CORS policy preflight failed) or network connection was dropped.'
+            : networkErr.message,
+          raw: { stack: networkErr.stack }
         };
       }
     }
 
-    async function runBatch() {
-      const text = document.getElementById('urls').value.trim();
-      if (!text) return;
+    async function startBatch() {
+      const textarea = document.getElementById('urls');
+      const lines = textarea.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+      if (lines.length === 0) return;
 
-      const rawUrls = text.split('\n')
-        .map(u => u.trim())
-        .filter(u => u.length > 0)
-        .slice(0, 50); // Enforce 50 max
+      const queue = lines.slice(0, 50);
+      const concurrencyLimit = parseInt(document.getElementById('concurrency').value, 10);
 
       const btn = document.getElementById('btnRun');
       btn.disabled = true;
-      btn.textContent = 'Executing...';
+      btn.textContent = 'Processing Batch...';
 
-      document.getElementById('listPassed').innerHTML = '';
-      document.getElementById('listFailed').innerHTML = '';
+      document.getElementById('passedList').innerHTML = '';
+      document.getElementById('failedList').innerHTML = '';
+      document.getElementById('corsBanner').style.display = 'none';
 
       let completed = 0;
       let passedCount = 0;
       let failedCount = 0;
 
-      const statProcessed = document.getElementById('statProcessed');
-      const statPassed = document.getElementById('statPassed');
-      const statFailed = document.getElementById('statFailed');
-      const statTime = document.getElementById('statTime');
-      const badgePassed = document.getElementById('badgePassed');
-      const badgeFailed = document.getElementById('badgeFailed');
-      const listPassed = document.getElementById('listPassed');
-      const listFailed = document.getElementById('listFailed');
+      const mProcessed = document.getElementById('mProcessed');
+      const mPassed = document.getElementById('mPassed');
+      const mFailed = document.getElementById('mFailed');
+      const mTime = document.getElementById('mTime');
+      const bPassed = document.getElementById('badgePassed');
+      const bFailed = document.getElementById('badgeFailed');
+      const passedContainer = document.getElementById('passedList');
+      const failedContainer = document.getElementById('failedList');
 
-      statProcessed.textContent = `0 / ${rawUrls.length}`;
-      statPassed.textContent = '0';
-      statFailed.textContent = '0';
+      mProcessed.textContent = `0 / ${queue.length}`;
+      mPassed.textContent = '0';
+      mFailed.textContent = '0';
 
-      const startTime = performance.now();
-      const interval = setInterval(() => {
-        statTime.textContent = Math.round(performance.now() - startTime) + ' ms';
+      const tStart = performance.now();
+      const clock = setInterval(() => {
+        mTime.textContent = Math.round(performance.now() - tStart) + ' ms';
       }, 50);
 
-      // Fire all up to 50 requests in parallel
-      const promises = rawUrls.map(url =>
-        crawlTarget(url).then(res => {
+      let corsErrorCount = 0;
+
+      // Pool runner for worker concurrency
+      let activeIndex = 0;
+      async function worker() {
+        while (activeIndex < queue.length) {
+          const currentIndex = activeIndex++;
+          const url = queue[currentIndex];
+          const result = await crawlTarget(url);
+
           completed++;
-          statProcessed.textContent = `${completed} / ${rawUrls.length}`;
+          mProcessed.textContent = `${completed} / ${queue.length}`;
 
-          if (res.ok) {
+          if (result.ok) {
             passedCount++;
-            statPassed.textContent = passedCount;
-            badgePassed.textContent = passedCount;
+            mPassed.textContent = passedCount;
+            bPassed.textContent = passedCount;
 
-            const card = document.createElement('div');
-            card.className = 'card-item';
-            card.innerHTML = `
-              <a class="url" href="${res.url}" target="_blank" rel="noreferrer">${res.url}</a>
-              <div class="details">
-                <span class="tag tag-ok">PASSED</span>
-                <span>Latency: <b>${res.duration}ms</b></span>
-                <span>Quality: <b>${res.data.quality || 0}/100</b></span>
-                <span>Words: <b>${(res.data.word_count || 0).toLocaleString()}</b></span>
+            const el = document.createElement('div');
+            el.className = 'item item-ok';
+            el.innerHTML = `
+              <div class="item-top">
+                <a class="item-url" href="${result.url}" target="_blank" rel="noreferrer">${result.url}</a>
+                <span class="item-time">${result.elapsed}ms</span>
               </div>
+              <div class="item-summary">
+                <span class="tag tag-green">SCORE: ${result.quality}/100</span>
+                <span><b>${result.wordCount.toLocaleString()}</b> words</span>
+                <span>Title: <i>${escapeHtml(result.title)}</i></span>
+              </div>
+              <details>
+                <summary>Inspect Diagnostic Payload</summary>
+                <pre>${escapeHtml(JSON.stringify(result.raw, null, 2))}</pre>
+              </details>
             `;
-            listPassed.appendChild(card);
+            passedContainer.appendChild(el);
           } else {
             failedCount++;
-            statFailed.textContent = failedCount;
-            badgeFailed.textContent = failedCount;
+            mFailed.textContent = failedCount;
+            bFailed.textContent = failedCount;
 
-            const errCode = (res.data && res.data.error && res.data.error.message) || 'UNKNOWN_ERROR';
-            const card = document.createElement('div');
-            card.className = 'card-item';
-            card.innerHTML = `
-              <a class="url" href="${res.url}" target="_blank" rel="noreferrer">${res.url}</a>
-              <div class="details">
-                <span class="tag tag-err">${errCode}</span>
-                <span>Latency: <b>${res.duration}ms</b></span>
+            if (result.reason === 'CORS_OR_NETWORK_ERROR') corsErrorCount++;
+
+            const el = document.createElement('div');
+            el.className = 'item item-err';
+            el.innerHTML = `
+              <div class="item-top">
+                <a class="item-url" href="${result.url}" target="_blank" rel="noreferrer">${result.url}</a>
+                <span class="item-time">${result.elapsed}ms</span>
               </div>
+              <div class="item-summary">
+                <span class="tag tag-red">${result.reason}</span>
+                <span>HTTP: <b>${result.httpStatus || 'None'}</b></span>
+              </div>
+              <div style="margin-top:6px; color:#fca5a5; font-size:11px;">${escapeHtml(result.details)}</div>
+              <details>
+                <summary>Inspect Error Trace</summary>
+                <pre>${escapeHtml(JSON.stringify(result.raw || { message: result.details }, null, 2))}</pre>
+              </details>
             `;
-            listFailed.appendChild(card);
+            failedContainer.appendChild(el);
           }
-        })
-      );
+        }
+      }
 
-      await Promise.allSettled(promises);
-      clearInterval(interval);
-      statTime.textContent = Math.round(performance.now() - startTime) + ' ms';
+      const workers = [];
+      const poolSize = Math.min(concurrencyLimit, queue.length);
+      for (let i = 0; i < poolSize; i++) {
+        workers.push(worker());
+      }
+
+      await Promise.all(workers);
+      clearInterval(clock);
+      mTime.textContent = Math.round(performance.now() - tStart) + ' ms';
       btn.disabled = false;
-      btn.textContent = 'Fire 50 in Parallel';
+      btn.textContent = 'Execute Parallel Batch';
+
+      if (corsErrorCount > 0 && corsErrorCount === queue.length) {
+        document.getElementById('corsBanner').style.display = 'block';
+      }
+    }
+
+    function escapeHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function loadPresets() {
+      document.getElementById('urls').value = [
+        "https://doc.rust-lang.org/book/ch01-01-installation.html",
+        "https://doc.rust-lang.org/std/vec/struct.Vec.html",
+        "https://go.dev/doc/tutorial/getting-started",
+        "https://docs.python.org/3/tutorial/index.html",
+        "https://developer.mozilla.org/en-US/docs/Web/HTTP/Overview",
+        "https://www.w3.org/TR/PNG/",
+        "https://en.wikipedia.org/wiki/Rust_(programming_language)",
+        "https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol",
+        "https://en.wikipedia.org/wiki/Serverless_computing",
+        "https://en.wikipedia.org/wiki/Web_scraping",
+        "https://news.ycombinator.com/",
+        "https://paulgraham.com/articles.html",
+        "https://paulgraham.com/worked.html",
+        "https://danluu.com/simple-architectures/",
+        "https://overreacted.io/a-complete-guide-to-useeffect/",
+        "https://antirez.com/news/140",
+        "https://jvns.ca/blog/2023/04/17/a-cl-for-every-day/",
+        "https://ciechanow.ski/internal-combustion-engine/",
+        "https://lucumr.pocoo.org/about/",
+        "https://simonwillison.net/about/",
+        "https://www.rfc-editor.org/rfc/rfc2616.txt",
+        "https://www.rfc-editor.org/rfc/rfc9110.html",
+        "https://www.ietf.org/about/",
+        "https://www.gnu.org/licenses/gpl-3.0.en.html",
+        "https://kernel.org/",
+        "https://www.eff.org/about",
+        "https://archive.org/about/",
+        "https://www.gutenberg.org/files/1342/1342-0.txt",
+        "https://www.loc.gov/about/",
+        "https://data.gov/",
+        "https://httpbin.org/html",
+        "https://httpbin.org/robots.txt",
+        "https://httpbin.org/status/200",
+        "https://httpbin.org/status/204",
+        "https://httpbin.org/status/401",
+        "https://httpbin.org/status/403",
+        "https://httpbin.org/status/404",
+        "https://httpbin.org/status/500",
+        "https://httpbin.org/redirect/2",
+        "https://httpbin.org/redirect/4",
+        "https://httpbin.org/redirect/6",
+        "https://www.theverge.com/",
+        "https://www.reuters.com/",
+        "https://old.reddit.com/r/programming/",
+        "https://lobste.rs/",
+        "https://arstechnica.com/",
+        "https://slashdot.org/",
+        "https://github.com/",
+        "https://stackoverflow.com/",
+        "https://www.cloudflare.com/"
+      ].join('\n');
     }
   </script>
 </body>
